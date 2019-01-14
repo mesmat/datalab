@@ -361,11 +361,19 @@ write_files:
        gcr.io/google-containers/fluentd-gcp:2.0.17
     Restart=always
     RestartSec=1
-
+{5}
 runcmd:
 - systemctl daemon-reload
 - systemctl start datalab.service
 - systemctl start logger.service
+"""
+
+_DOCKER_CERTIFICATE_CHUNK = """
+- path: /etc/docker/certs.d/{0}/cert.crt
+  permissions: 0644
+  owner: root
+  content: |
+{1}
 """
 
 
@@ -576,6 +584,18 @@ def flags(parser):
               '\n\n'
               'If not provided, the instance will get project\'s default '
               'service account.'))
+    parser.add_argument(
+        '--docker-certificate-domain',
+        dest='docker_cert_domain',
+        help=(
+            'Domain of Docker client SSL certificate. Used when pulling from '
+            'private Docker registry. Must specify `--docker-certificate-path` when used.'))
+    parser.add_argument(
+        '--docker-certificate-path',
+        dest='docker_cert_path',
+        help=(
+            'Path to Docker client SSL certificate. Used when pulling from '
+            'private Docker registry. Must specify `--docker-certificate-domain` when used.'))
 
     connect.connection_flags(parser)
     return
@@ -1003,9 +1023,19 @@ def run(args, gcloud_compute, gcloud_repos,
             startup_script_file.write(_DATALAB_STARTUP_SCRIPT.format(
                 args.image_name, _DATALAB_NOTEBOOKS_REPOSITORY, enable_swap))
             startup_script_file.close()
+            docker_cert_chunk = ""
+            if args.docker_cert_domain and args.docker_cert_path:
+                with open(args.docker_cert_path, 'r') as cert_file:
+                    docker_cert_chunk_arr = []
+                    for line in cert_file:
+                        docker_cert_chunk_arr.append(line)
+                    cert_file_content = '    ' + \
+                        '    '.join(docker_cert_chunk_arr)
+                    docker_cert_chunk = _DOCKER_CERTIFICATE_CHUNK.format(
+                        args.docker_cert_domain, cert_file_content)
             user_data_file.write(_DATALAB_CLOUD_CONFIG.format(
                 args.image_name, enable_backups,
-                console_log_level, escaped_email, initial_user_settings))
+                console_log_level, escaped_email, initial_user_settings, docker_cert_chunk))
             user_data_file.close()
             for_user_file.write(user_email)
             for_user_file.close()
