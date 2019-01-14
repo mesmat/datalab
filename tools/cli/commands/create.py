@@ -276,7 +276,7 @@ write_files:
     ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
     ExecStart=/usr/bin/docker run --rm -u 0 \
        --name=datalab \
-       -p 127.0.0.1:8080:8080 \
+       -p {6}:8080 \
        -v /mnt/disks/datalab-pd/content:/content \
        -v /mnt/disks/datalab-pd/tmp:/tmp \
        --env=HOME=/content \
@@ -603,6 +603,12 @@ def flags(parser):
         help=(
             'Path to Docker client SSL certificate. Used when pulling from '
             'private Docker registry. Must specify `--docker-certificate-domain` when used.'))
+
+    parser.add_argument(
+        '--docker-host-port',
+        dest='docker_host_port',
+        default='127.0.0.1:8080',
+        help='Default port on Docker host to map to port 8080 on the Datalab container.')
 
     connect.connection_flags(parser)
     return
@@ -1045,7 +1051,8 @@ def run(args, gcloud_compute, gcloud_repos,
                         args.docker_cert_domain, cert_file_content)
             user_data_file.write(_DATALAB_CLOUD_CONFIG.format(
                 args.image_name, enable_backups,
-                console_log_level, escaped_email, initial_user_settings, docker_cert_chunk))
+                console_log_level, escaped_email, initial_user_settings, docker_cert_chunk,
+                args.docker_host_port))
             user_data_file.close()
             for_user_file.write(user_email)
             for_user_file.close()
