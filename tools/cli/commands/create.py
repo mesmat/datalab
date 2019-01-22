@@ -282,6 +282,7 @@ write_files:
        --env=HOME=/content \
        --env=DATALAB_ENV=GCE \
        --env=DATALAB_DEBUG=true \
+       --env=GIT_SSL_NO_VERIFY=true \
        --env='DATALAB_SETTINGS_OVERRIDES={{ \
             "enableAutoGCSBackups": {1}, \
             "consoleLogLevel": "{2}" \
