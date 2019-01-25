@@ -61,6 +61,14 @@ _DATALAB_NOTEBOOKS_REPOSITORY = 'datalab-notebooks'
 
 _DATALAB_STARTUP_SCRIPT = """#!/bin/bash
 
+# Before we begin, remove obsolete ssh ciphers, macs, and key exchange algorithms -- ING Requirement
+
+sudo sed -i -e  's/\(aes192-ctr\|aes128-ctr\|aes256-ctr\)\,\?//g'  /etc/ssh/sshd_config
+
+sudo sshd -T | grep kex | sed -e  's/kexalgorithms/KexAlgorithms/g' -e  's/\(diffie-hellman-group14-sha1\|ecdh-sha2-nistp384\|ecdh-sha2-nistp521\|necdh-sha2-nistp256\)\,\?//g' >> /etc/ssh/sshd_config
+
+sudo sshd -T | grep mac | sed -e  's/macs/MACs/g' -e  's/\(hmac-sha1\|hmac-sha1-etm@openssh.com\|umac-64-etm@openssh.com\|numac-64@openssh.com\)\,\?//g' >> /etc/ssh/sshd_config
+
 # First, make sure the `datalab` and `logger` users exist with their
 # home directories setup correctly.
 useradd datalab -u 2000 || useradd datalab
